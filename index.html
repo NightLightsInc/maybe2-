@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Multistream</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap">
+<style>
+:root{
+  --bg:#e8ecef; --panel:#f6f8f9; --ink:#17212b; --mute:#5b6773; --line:#c9d1d8;
+  --live:#e5383b; --ok:#1f8a5b; --accent:#2457d6; color-scheme:light dark;
+  font-family:"Bricolage Grotesque",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#10151b;--panel:#1a222b;--ink:#e8edf1;--mute:#93a0ab;--line:#2c3743;--accent:#7ea2ff;--live:#ff5a5d;--ok:#4cc38a}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);min-height:100vh}
+main{max-width:1100px;margin:0 auto;padding:28px 20px 48px;display:grid;gap:28px;grid-template-columns:minmax(0,1.5fr) minmax(280px,1fr)}
+@media (max-width:820px){main{grid-template-columns:1fr}}
+h1{font-size:2rem;font-weight:800;margin:0 0 4px;letter-spacing:-.02em;grid-column:1/-1}
+.sub{color:var(--mute);margin:0 0 4px;grid-column:1/-1}
+.stage{background:#000;border-radius:14px;aspect-ratio:16/9;position:relative;overflow:hidden;
+  outline:4px solid var(--line);outline-offset:0;transition:outline-color .2s}
+.stage.live{outline-color:var(--live)}
+video{width:100%;height:100%;object-fit:contain;display:block}
+.empty{position:absolute;inset:0;display:grid;place-items:center;color:#9aa6b2;text-align:center;padding:20px}
+.badge{position:absolute;top:12px;left:12px;background:var(--live);color:#fff;font-weight:800;padding:4px 10px;border-radius:6px;display:none}
+.stage.live .badge{display:block}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;align-items:center}
+button{font:inherit;font-weight:600;border:1px solid var(--line);background:var(--panel);color:var(--ink);
+  padding:10px 16px;border-radius:10px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+button.go{background:var(--live);border-color:var(--live);color:#fff;margin-left:auto;font-weight:800}
+button.go:disabled{opacity:.5;cursor:not-allowed}
+.status{margin-top:12px;min-height:1.4em;color:var(--mute)}
+.status.err{color:var(--live)}
+aside{background:var(--panel);border-radius:14px;padding:18px;align-self:start;border:1px solid var(--line)}
+aside h2{margin:0 0 12px;font-size:1.1rem}
+.dest{border-top:1px solid var(--line);padding:14px 0}
+.dest:first-of-type{border-top:0;padding-top:0}
+.dest label.head{display:flex;gap:10px;align-items:center;font-weight:600}
+.dest input[type=password],.dest input[type=text],.code input{width:100%;margin-top:8px;padding:9px 11px;border-radius:8px;
+  border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit}
+.dest .fields{display:none}
+.dest.on .fields{display:block}
+.hint{font-size:.85rem;color:var(--mute);margin:10px 0 0}
+.code{margin-top:14px}
+.locked input,.locked button.src{pointer-events:none;opacity:.6}
+</style>
+</head>
+<body>
+<main>
+  <h1>Multistream</h1>
+  <p class="sub">Go live on several platforms from one stream.</p>
+
+  <section>
+    <div class="stage" id="stage">
+      <video id="preview" autoplay muted playsinline></video>
+      <div class="empty" id="empty">Choose a camera or share your screen to see a preview.</div>
+      <div class="badge">LIVE</div>
+    </div>
+    <div class="row">
+      <button class="src" id="cam">Use camera</button>
+      <button class="src" id="scr">Share screen</button>
+      <button class="go" id="go" disabled>Go live</button>
+    </div>
+    <div class="status" id="status" role="status"></div>
+  </section>
+
+  <aside id="side">
+    <h2>Where to stream</h2>
+    <div id="dests"></div>
+    <p class="hint">Stream keys stay in this tab and are never saved. Find them in each platform's creator dashboard.</p>
+    <div class="code" id="codeWrap" hidden>
+      <label>Access code<input type="password" id="code" autocomplete="off"></label>
+    </div>
+  </aside>
+</main>
+
+<script>
+const PRESETS = [
+  { name: 'Twitch',   url: 'rtmp://live.twitch.tv/app' },
+  { name: 'YouTube',  url: 'rtmp://a.rtmp.youtube.com/live2' },
+  { name: 'Facebook', url: 'rtmps://live-api-s.facebook.com:443/rtmp' },
+];
+const $ = (id) => document.getElementById(id);
+let media = null, ws = null, rec = null, live = false;
+
+// Build destination cards
+PRESETS.forEach((p, i) => {
+  const d = document.createElement('div');
+  d.className = 'dest';
+  d.innerHTML = `
+    <label class="head"><input type="checkbox" id="on${i}"> ${p.name}</label>
+    <div class="fields">
+      <input type="text" id="url${i}" value="${p.url}" aria-label="${p.name} server URL">
+      <input type="password" id="key${i}" placeholder="${p.name} stream key" autocomplete="off" aria-label="${p.name} stream key">
+    </div>`;
+  $('dests').appendChild(d);
+  d.querySelector(`#on${i}`).addEventListener('change', (e) => d.classList.toggle('on', e.target.checked));
+});
+
+function setStatus(msg, err = false) { const s = $('status'); s.textContent = msg; s.className = 'status' + (err ? ' err' : ''); }
+
+async function useSource(kind) {
+  try {
+    if (media) media.getTracks().forEach((t) => t.stop());
+    if (kind === 'cam') {
+      media = await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720, frameRate: 30 }, audio: true });
+    } else {
+      media = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: true });
+      if (!media.getAudioTracks().length) {
+        try { const mic = await navigator.mediaDevices.getUserMedia({ audio: true }); mic.getAudioTracks().forEach((t) => media.addTrack(t)); } catch {}
+      }
+      media.getVideoTracks()[0].addEventListener('ended', () => { if (live) stopStream('Screen sharing stopped.'); });
+    }
+    $('preview').srcObject = media;
+    $('empty').hidden = true;
+    $('go').disabled = false;
+    setStatus('Ready. Choose your destinations, then go live.');
+  } catch (e) {
+    setStatus('Could not access your camera or screen. Check browser permissions.', true);
+  }
+}
+$('cam').onclick = () => useSource('cam');
+$('scr').onclick = () => useSource('scr');
+
+function setLive(on) {
+  live = on;
+  $('stage').classList.toggle('live', on);
+  $('go').textContent = on ? 'End stream' : 'Go live';
+  $('side').classList.toggle('locked', on);
+  $('cam').disabled = $('scr').disabled = on;
+}
+
+function startStream() {
+  const destinations = PRESETS.map((p, i) => ({
+    name: p.name, url: $('url' + i).value.trim(), key: $('key' + i).value.trim(), on: $('on' + i).checked,
+  })).filter((d) => d.on);
+  if (!destinations.length) return setStatus('Select at least one destination.', true);
+  if (destinations.some((d) => !d.key)) return setStatus('Enter a stream key for each selected destination.', true);
+
+  const mime = ['video/webm;codecs=vp8,opus', 'video/webm'].find((m) => MediaRecorder.isTypeSupported(m));
+  if (!mime) return setStatus('This browser cannot record WebM. Use Chrome, Edge, or Firefox.', true);
+
+  setStatus('Connecting…');
+  ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ingest`);
+  ws.onopen = () => ws.send(JSON.stringify({ type: 'start', code: $('code').value, destinations: destinations.map(({ name, url, key }) => ({ name, url, key })) }));
+  ws.onmessage = (ev) => {
+    const m = JSON.parse(ev.data);
+    if (m.type === 'ready') {
+      rec = new MediaRecorder(media, { mimeType: mime, videoBitsPerSecond: 4_000_000, audioBitsPerSecond: 128_000 });
+      rec.ondataavailable = (e) => { if (e.data.size && ws.readyState === 1) e.data.arrayBuffer().then((b) => ws.readyState === 1 && ws.send(b)); };
+      rec.start(500);
+      setLive(true);
+      setStatus(`Live on ${destinations.map((d) => d.name).join(', ')}.`);
+    } else if (m.type === 'stats') {
+      setStatus(`Live on ${destinations.map((d) => d.name).join(', ')} · ${m.kbps} kbps`);
+    } else if (m.type === 'error') {
+      setStatus(m.msg, true); cleanup();
+    } else if (m.type === 'ended') {
+      if (live) setStatus('Stream ended.'); cleanup();
+    }
+  };
+  ws.onerror = () => { setStatus('Could not reach the server.', true); cleanup(); };
+  ws.onclose = () => { if (live) { setStatus('Connection lost. The stream has stopped.', true); cleanup(); } };
+}
+
+function cleanup() {
+  if (rec && rec.state !== 'inactive') rec.stop();
+  rec = null; setLive(false);
+  if (ws && ws.readyState <= 1) ws.close();
+  ws = null;
+}
+
+function stopStream(msg) {
+  if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: 'stop' }));
+  cleanup();
+  setStatus(msg || 'Stream ended.');
+}
+
+$('go').onclick = () => (live ? stopStream() : startStream());
+window.addEventListener('beforeunload', (e) => { if (live) { e.preventDefault(); e.returnValue = ''; } });
+
+// Show the access-code field only if the server asks for one.
+fetch('/config').then((r) => r.json()).then((c) => { $('codeWrap').hidden = !c.needsCode; }).catch(() => {});
+</script>
+</body>
+</html>
