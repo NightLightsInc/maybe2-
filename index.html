@@ -2,190 +2,566 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Multistream</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap">
 <style>
-:root{
-  --bg:#e8ecef; --panel:#f6f8f9; --ink:#17212b; --mute:#5b6773; --line:#c9d1d8;
-  --live:#e5383b; --ok:#1f8a5b; --accent:#2457d6; color-scheme:light dark;
-  font-family:"Bricolage Grotesque",system-ui,sans-serif;
-}
-@media (prefers-color-scheme:dark){
-  :root{--bg:#10151b;--panel:#1a222b;--ink:#e8edf1;--mute:#93a0ab;--line:#2c3743;--accent:#7ea2ff;--live:#ff5a5d;--ok:#4cc38a}
-}
+:root{--bg:#e8ecef;--panel:#f6f8f9;--ink:#17212b;--mute:#5b6773;--line:#c9d1d8;--live:#e5383b;--ok:#1f8a5b;--accent:#2457d6;
+  color-scheme:light dark;font-family:"Bricolage Grotesque",system-ui,sans-serif;box-sizing:border-box}
+@media (prefers-color-scheme:dark){:root{--bg:#10151b;--panel:#1a222b;--ink:#e8edf1;--mute:#93a0ab;--line:#2c3743;--accent:#7ea2ff;--live:#ff5a5d;--ok:#4cc38a}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);min-height:100vh}
-main{max-width:1100px;margin:0 auto;padding:28px 20px 48px;display:grid;gap:28px;grid-template-columns:minmax(0,1.5fr) minmax(280px,1fr)}
-@media (max-width:820px){main{grid-template-columns:1fr}}
-h1{font-size:2rem;font-weight:800;margin:0 0 4px;letter-spacing:-.02em;grid-column:1/-1}
-.sub{color:var(--mute);margin:0 0 4px;grid-column:1/-1}
-.stage{background:#000;border-radius:14px;aspect-ratio:16/9;position:relative;overflow:hidden;
-  outline:4px solid var(--line);outline-offset:0;transition:outline-color .2s}
+main{max-width:1150px;margin:0 auto;padding:28px 20px 48px;display:grid;gap:24px;grid-template-columns:minmax(0,1.5fr) minmax(300px,1fr)}
+@media (max-width:860px){main{grid-template-columns:1fr}}
+h1{font-size:2rem;font-weight:800;margin:0;letter-spacing:-.02em;grid-column:1/-1}
+.sub{color:var(--mute);margin:-18px 0 0;grid-column:1/-1}
+h2{margin:0 0 12px;font-size:1.05rem}
+.stage{background:#000;border-radius:14px;aspect-ratio:16/9;position:relative;overflow:hidden;outline:4px solid var(--line);transition:outline-color .2s}
 .stage.live{outline-color:var(--live)}
 video{width:100%;height:100%;object-fit:contain;display:block}
 .empty{position:absolute;inset:0;display:grid;place-items:center;color:#9aa6b2;text-align:center;padding:20px}
-.badge{position:absolute;top:12px;left:12px;background:var(--live);color:#fff;font-weight:800;padding:4px 10px;border-radius:6px;display:none}
+.badge{position:absolute;top:12px;left:12px;background:var(--live);color:#fff;font-weight:800;padding:4px 10px;border-radius:6px;display:none;font-variant-numeric:tabular-nums}
 .stage.live .badge{display:block}
 .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;align-items:center}
-button{font:inherit;font-weight:600;border:1px solid var(--line);background:var(--panel);color:var(--ink);
-  padding:10px 16px;border-radius:10px;cursor:pointer}
-button:hover{border-color:var(--accent)}
-button:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+button,select,input{font:inherit}
+button{font-weight:600;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:9px 15px;border-radius:10px;cursor:pointer}
+button:hover:not(:disabled){border-color:var(--accent)}
+button:disabled{opacity:.5;cursor:not-allowed}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 button.go{background:var(--live);border-color:var(--live);color:#fff;margin-left:auto;font-weight:800}
-button.go:disabled{opacity:.5;cursor:not-allowed}
 .status{margin-top:12px;min-height:1.4em;color:var(--mute)}
 .status.err{color:var(--live)}
-aside{background:var(--panel);border-radius:14px;padding:18px;align-self:start;border:1px solid var(--line)}
-aside h2{margin:0 0 12px;font-size:1.1rem}
-.dest{border-top:1px solid var(--line);padding:14px 0}
-.dest:first-of-type{border-top:0;padding-top:0}
-.dest label.head{display:flex;gap:10px;align-items:center;font-weight:600}
-.dest input[type=password],.dest input[type=text],.code input{width:100%;margin-top:8px;padding:9px 11px;border-radius:8px;
-  border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit}
-.dest .fields{display:none}
-.dest.on .fields{display:block}
-.hint{font-size:.85rem;color:var(--mute);margin:10px 0 0}
-.code{margin-top:14px}
-.locked input,.locked button.src{pointer-events:none;opacity:.6}
+.card{background:var(--panel);border-radius:14px;padding:16px;border:1px solid var(--line);margin-top:18px}
+.right .card:first-child{margin-top:0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:520px){.grid2{grid-template-columns:1fr}}
+label{display:block;font-size:.9rem;color:var(--mute)}
+label+label{margin-top:10px}
+select,input[type=text],input[type=password],input[type=url]{width:100%;margin-top:6px;padding:9px 11px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.level{display:flex;gap:12px;align-items:center;margin-top:14px}
+.level input{flex:1;accent-color:var(--accent)}
+.level output{min-width:3.4em;text-align:right;font-variant-numeric:tabular-nums}
+.meter{height:10px;background:var(--line);border-radius:6px;overflow:hidden;margin-top:10px}
+.meter i{display:block;height:100%;width:0;background:var(--ok);transition:width .06s}
+.meter i.hot{background:var(--live)}
+.opts{display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin-top:14px}
+.opts label{display:flex;gap:6px;align-items:center;margin:0}
+.hint{font-size:.85rem;color:var(--mute);margin:10px 0 0;line-height:1.4}
+.feed{height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;padding-right:4px}
+.feed:empty::before{content:"Messages from your chats will show up here.";color:var(--mute)}
+.msg{border-left:4px solid var(--pc,var(--line));padding:4px 0 4px 10px;line-height:1.35;overflow-wrap:anywhere}
+.msg .plat{font-size:.78rem;color:var(--mute)}
+.msg.sys{color:var(--mute);font-style:italic}
+.chatform{display:flex;gap:8px;margin-top:10px}
+.chatform input{margin:0}
+details{border-top:1px solid var(--line);padding:12px 0}
+details:first-of-type{border-top:0;padding-top:0}
+summary{font-weight:700;cursor:pointer}
+details>div{margin-top:12px}
+.dest{padding:8px 0}
+.dest .head{display:flex;gap:10px;align-items:center;font-weight:600;color:var(--ink)}
+.dest .fields{display:none}.dest.on .fields{display:block}
+.locked{opacity:.6;pointer-events:none}
+.chatstate{color:var(--mute);font-size:.9rem}
 </style>
 </head>
 <body>
 <main>
   <h1>Multistream</h1>
-  <p class="sub">Go live on several platforms from one stream.</p>
+  <p class="sub">Go live on several platforms and talk to all your chats in one place.</p>
 
   <section>
     <div class="stage" id="stage">
       <video id="preview" autoplay muted playsinline></video>
       <div class="empty" id="empty">Choose a camera or share your screen to see a preview.</div>
-      <div class="badge">LIVE</div>
+      <div class="badge" id="badge">LIVE</div>
     </div>
     <div class="row">
-      <button class="src" id="cam">Use camera</button>
-      <button class="src" id="scr">Share screen</button>
+      <button id="cam">Use camera</button>
+      <button id="scr">Share screen</button>
       <button class="go" id="go" disabled>Go live</button>
     </div>
     <div class="status" id="status" role="status"></div>
+
+    <div class="card">
+      <h2>Audio</h2>
+      <div class="grid2">
+        <label>Microphone<select id="micSel"><option value="">Default microphone</option></select></label>
+        <label>Speaker<select id="outSel"><option value="">Default speaker</option></select></label>
+      </div>
+      <div class="level">
+        <button id="mute">Mute</button>
+        <input type="range" id="vol" min="0" max="150" value="100" aria-label="Microphone level">
+        <output id="volv">100%</output>
+      </div>
+      <div class="meter" aria-hidden="true"><i id="meterbar"></i></div>
+      <div class="opts">
+        <button id="micOn">Turn on mic</button>
+        <label><input type="checkbox" id="mon"> Hear my mic</label>
+        <label><input type="checkbox" id="pingOn" checked> Chat ping</label>
+        <button id="test">Test sound</button>
+      </div>
+      <p class="hint">Level and mute change what your viewers hear. Use headphones with Hear my mic. Switching speakers works in Chrome and Edge.</p>
+    </div>
   </section>
 
-  <aside id="side">
-    <h2>Where to stream</h2>
-    <div id="dests"></div>
-    <p class="hint">Stream keys stay in this tab and are never saved. Find them in each platform's creator dashboard.</p>
-    <div class="code" id="codeWrap" hidden>
-      <label>Access code<input type="password" id="code" autocomplete="off"></label>
+  <section class="right">
+    <div class="card">
+      <h2>Chat</h2>
+      <div class="feed" id="feed" role="log" aria-live="polite"></div>
+      <form class="chatform" id="chatForm">
+        <input type="text" id="chatIn" placeholder="Reply to chat" autocomplete="off" aria-label="Reply to chat" maxlength="400">
+        <button type="submit">Send</button>
+      </form>
     </div>
-  </aside>
+
+    <div class="card">
+      <details open id="outDetails">
+        <summary>Stream output</summary>
+        <div id="outBox">
+          <label>How should video leave this page?
+            <select id="mode">
+              <option value="relay">My relay server (FFmpeg)</option>
+              <option value="whip">A streaming service (WHIP)</option>
+            </select>
+          </label>
+          <div id="relayBox">
+            <label>Relay address<input type="text" id="relayUrl" autocomplete="off" spellcheck="false"></label>
+            <label>Access code (if your relay needs one)<input type="password" id="code" autocomplete="off"></label>
+            <div id="dests" style="margin-top:12px"></div>
+            <p class="hint">Stream keys stay in this tab and are never saved.</p>
+          </div>
+          <div id="whipBox" hidden>
+            <label>WHIP endpoint URL<input type="text" id="whipUrl" placeholder="https://…" autocomplete="off" spellcheck="false"></label>
+            <label>Bearer token (if required)<input type="password" id="whipTok" autocomplete="off"></label>
+            <p class="hint">Use a service that accepts WHIP and forwards to Twitch and YouTube, such as Cloudflare Stream Live or Livepeer Studio. Add Twitch and YouTube as outputs in that service’s dashboard.</p>
+          </div>
+        </div>
+      </details>
+      <details open>
+        <summary>Chat sources</summary>
+        <div>
+          <label>Twitch channel<input type="text" id="twCh" placeholder="yourchannel" autocomplete="off"></label>
+          <label>Twitch username to reply as (optional)<input type="text" id="twNick" autocomplete="off"></label>
+          <label>Twitch OAuth token (optional, for replies)<input type="password" id="twTok" autocomplete="off"></label>
+          <label>YouTube live URL or video ID<input type="text" id="ytId" placeholder="https://youtube.com/watch?v=…" autocomplete="off"></label>
+          <label>YouTube API key<input type="password" id="ytKey" autocomplete="off"></label>
+          <label>YouTube OAuth token (optional, for replies)<input type="password" id="ytTok" autocomplete="off"></label>
+          <div class="row">
+            <button id="chatConnect">Connect chat</button>
+            <button id="demoChat">Try demo chat</button>
+          </div>
+          <p class="chatstate" id="chatState"></p>
+          <p class="hint">Twitch chat can be read with just the channel name. YouTube needs an API key and uses a little quota per refresh. Tokens are kept in this tab only.</p>
+        </div>
+      </details>
+    </div>
+  </section>
 </main>
 
 <script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const store = {
+  get(k) { try { return localStorage.getItem('ms_' + k) || ''; } catch { return ''; } },
+  set(k, v) { try { localStorage.setItem('ms_' + k, v); } catch {} },
+};
 const PRESETS = [
   { name: 'Twitch',   url: 'rtmp://live.twitch.tv/app' },
   { name: 'YouTube',  url: 'rtmp://a.rtmp.youtube.com/live2' },
   { name: 'Facebook', url: 'rtmps://live-api-s.facebook.com:443/rtmp' },
+  { name: 'Custom',   url: '' },
 ];
-const $ = (id) => document.getElementById(id);
-let media = null, ws = null, rec = null, live = false;
+const PCOLOR = { twitch: '#9146ff', youtube: '#ff4e45', you: 'var(--accent)' };
+const PNAME = { twitch: 'Twitch', youtube: 'YouTube', you: 'You' };
 
-// Build destination cards
+let video = null, broadcast = null, live = false, liveSince = 0, timer = null;
+let relay = null, rec = null, pc = null, whipLoc = null;
+let ctx, gain, analyser, procDest, monDest, monGain, monEl, micSrc, micStream, sysSrc, muted = false;
+let tw = null, yt = null, demoTimer = null;
+
+function setStatus(msg, err = false) { $('status').textContent = msg; $('status').className = 'status' + (err ? ' err' : ''); }
+
+/* ================= settings UI ================= */
 PRESETS.forEach((p, i) => {
   const d = document.createElement('div');
   d.className = 'dest';
-  d.innerHTML = `
-    <label class="head"><input type="checkbox" id="on${i}"> ${p.name}</label>
-    <div class="fields">
-      <input type="text" id="url${i}" value="${p.url}" aria-label="${p.name} server URL">
-      <input type="password" id="key${i}" placeholder="${p.name} stream key" autocomplete="off" aria-label="${p.name} stream key">
-    </div>`;
+  d.innerHTML = `<label class="head"><input type="checkbox" id="on${i}"> ${p.name}</label>
+    <div class="fields"><input type="text" id="url${i}" value="${esc(p.url)}" placeholder="rtmp://…" aria-label="${p.name} server URL" spellcheck="false">
+    <input type="password" id="key${i}" placeholder="${p.name} stream key" autocomplete="off" aria-label="${p.name} stream key"></div>`;
   $('dests').appendChild(d);
-  d.querySelector(`#on${i}`).addEventListener('change', (e) => d.classList.toggle('on', e.target.checked));
+  d.querySelector('input').addEventListener('change', (e) => d.classList.toggle('on', e.target.checked));
 });
+const defaultRelay = /^https?:$/.test(location.protocol) ? `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ingest` : 'ws://localhost:3000/ingest';
+$('relayUrl').value = store.get('relayUrl') || defaultRelay;
+$('whipUrl').value = store.get('whipUrl');
+$('twCh').value = store.get('twCh');
+$('ytId').value = store.get('ytId');
+$('mode').value = store.get('mode') === 'whip' ? 'whip' : 'relay';
+function showMode() { const w = $('mode').value === 'whip'; $('whipBox').hidden = !w; $('relayBox').hidden = w; store.set('mode', $('mode').value); }
+$('mode').onchange = showMode; showMode();
 
-function setStatus(msg, err = false) { const s = $('status'); s.textContent = msg; s.className = 'status' + (err ? ' err' : ''); }
+/* ================= audio mixer ================= */
+function ensureCtx() {
+  if (ctx) return;
+  ctx = new (window.AudioContext || window.webkitAudioContext)();
+  gain = ctx.createGain(); analyser = ctx.createAnalyser(); analyser.fftSize = 512;
+  procDest = ctx.createMediaStreamDestination();   // what viewers hear
+  monDest = ctx.createMediaStreamDestination();    // what you hear, on the speaker you choose
+  monGain = ctx.createGain(); monGain.gain.value = $('mon').checked ? 1 : 0;
+  gain.connect(analyser); gain.connect(procDest); gain.connect(monGain); monGain.connect(monDest);
+  monEl = new Audio(); monEl.srcObject = monDest.stream;
+  applyGain();
+}
+async function wake() { ensureCtx(); await ctx.resume(); monEl.play().catch(() => {}); }
+function applyGain() {
+  if (gain) gain.gain.value = muted ? 0 : $('vol').value / 100;
+  $('volv').textContent = muted ? 'Muted' : $('vol').value + '%';
+  $('mute').textContent = muted ? 'Unmute' : 'Mute';
+}
+function fill(sel, list, label, firstLabel) {
+  const cur = sel.value;
+  sel.innerHTML = `<option value="">${firstLabel}</option>` + list.filter((x) => x.deviceId && x.deviceId !== 'default')
+    .map((x, i) => `<option value="${esc(x.deviceId)}">${esc(x.label || label + ' ' + (i + 1))}</option>`).join('');
+  if ([...sel.options].some((o) => o.value === cur)) sel.value = cur;
+}
+async function listDevices() {
+  let d = [];
+  try { d = await navigator.mediaDevices.enumerateDevices(); } catch {}
+  fill($('micSel'), d.filter((x) => x.kind === 'audioinput'), 'Microphone', 'Default microphone');
+  fill($('outSel'), d.filter((x) => x.kind === 'audiooutput'), 'Speaker', 'Default speaker');
+}
+async function setMic() {
+  await wake();
+  if (micStream) micStream.getTracks().forEach((t) => t.stop());
+  if (micSrc) micSrc.disconnect();
+  micStream = micSrc = null;
+  const id = $('micSel').value;
+  try {
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: {
+      deviceId: id ? { exact: id } : undefined, echoCancellation: true, noiseSuppression: true, autoGainControl: false } });
+    micSrc = ctx.createMediaStreamSource(micStream); micSrc.connect(gain);
+    setStatus('Microphone on.');
+  } catch { setStatus('Could not use that microphone. Check browser permissions.', true); }
+  await listDevices();
+  if (micStream) { const t = micStream.getAudioTracks()[0].getSettings().deviceId; if (t && [...$('micSel').options].some((o) => o.value === t)) $('micSel').value = t; }
+}
+$('micOn').onclick = setMic;
+$('micSel').onchange = setMic;
+$('outSel').onchange = async (e) => {
+  await wake();
+  try { if (!monEl.setSinkId) throw 0; await monEl.setSinkId(e.target.value); setStatus('Speaker changed.'); }
+  catch { setStatus('This browser cannot switch speakers. Use Chrome or Edge.', true); }
+};
+$('vol').oninput = () => { if (+$('vol').value > 0) muted = false; applyGain(); };
+$('mute').onclick = () => { muted = !muted; applyGain(); };
+$('mon').onchange = async (e) => { await wake(); monGain.gain.value = e.target.checked ? 1 : 0; };
+function ping() {
+  if (!ctx || ctx.state !== 'running') return;
+  const o = ctx.createOscillator(), g = ctx.createGain(), t = ctx.currentTime;
+  o.frequency.value = 880; g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(0.2, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+  o.connect(g); g.connect(monDest); o.start(t); o.stop(t + 0.25);
+}
+$('test').onclick = async () => { await wake(); ping(); };
+if (navigator.mediaDevices) navigator.mediaDevices.addEventListener?.('devicechange', listDevices);
+listDevices();
 
+const tbuf = new Uint8Array(512);
+(function meter() {
+  let lvl = 0;
+  if (analyser && micSrc) { analyser.getByteTimeDomainData(tbuf); let s = 0; for (const v of tbuf) s += ((v - 128) / 128) ** 2; lvl = Math.min(1, Math.sqrt(s / tbuf.length) * 3); }
+  $('meterbar').style.width = Math.round(lvl * 100) + '%';
+  $('meterbar').classList.toggle('hot', lvl > 0.85);
+  requestAnimationFrame(meter);
+})();
+
+/* ================= video source ================= */
 async function useSource(kind) {
   try {
-    if (media) media.getTracks().forEach((t) => t.stop());
-    if (kind === 'cam') {
-      media = await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720, frameRate: 30 }, audio: true });
-    } else {
-      media = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: true });
-      if (!media.getAudioTracks().length) {
-        try { const mic = await navigator.mediaDevices.getUserMedia({ audio: true }); mic.getAudioTracks().forEach((t) => media.addTrack(t)); } catch {}
-      }
-      media.getVideoTracks()[0].addEventListener('ended', () => { if (live) stopStream('Screen sharing stopped.'); });
+    await wake();
+    const next = kind === 'cam'
+      ? await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720, frameRate: 30 } })
+      : await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: true });
+    if (video) video.getTracks().forEach((t) => t.stop());
+    video = next;
+    if (sysSrc) { sysSrc.disconnect(); sysSrc = null; }
+    if (kind === 'scr') {
+      const at = video.getAudioTracks();
+      if (at.length) { sysSrc = ctx.createMediaStreamSource(new MediaStream(at)); sysSrc.connect(procDest); }
+      video.getVideoTracks()[0].addEventListener('ended', () => { if (live) stopStream('Screen sharing stopped.'); });
     }
-    $('preview').srcObject = media;
-    $('empty').hidden = true;
-    $('go').disabled = false;
-    setStatus('Ready. Choose your destinations, then go live.');
-  } catch (e) {
-    setStatus('Could not access your camera or screen. Check browser permissions.', true);
-  }
+    $('preview').srcObject = new MediaStream(video.getVideoTracks());
+    $('empty').hidden = true; $('go').disabled = false;
+    if (!micStream) await setMic();
+    broadcast = new MediaStream([...video.getVideoTracks(), ...procDest.stream.getAudioTracks()]);
+    setStatus('Ready. Choose where to stream, then go live.');
+  } catch { setStatus('Could not access your camera or screen. Check browser permissions.', true); }
 }
 $('cam').onclick = () => useSource('cam');
 $('scr').onclick = () => useSource('scr');
 
+/* ================= chat feed ================= */
+function addChat({ platform, user, text, system }) {
+  const feed = $('feed');
+  const stick = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 50;
+  const el = document.createElement('div');
+  el.className = 'msg' + (system ? ' sys' : '');
+  el.style.setProperty('--pc', PCOLOR[platform] || 'var(--line)');
+  if (system) el.textContent = text;
+  else {
+    const p = document.createElement('span'); p.className = 'plat'; p.textContent = PNAME[platform] || platform;
+    const b = document.createElement('b'); b.textContent = user;
+    el.append(p, ' ', b, ' ', document.createTextNode(text));
+  }
+  feed.appendChild(el);
+  while (feed.children.length > 200) feed.firstChild.remove();
+  if (stick) feed.scrollTop = feed.scrollHeight;
+  if (!system && platform !== 'you' && $('pingOn').checked) ping();
+}
+const sys = (text) => addChat({ system: true, text });
+
+/* ---- Twitch (IRC over WebSocket, works straight from the browser) ---- */
+function twConnect() {
+  const chan = $('twCh').value.trim().toLowerCase().replace(/^https?:\/\/(www\.)?twitch\.tv\//, '').replace(/^#/, '').replace(/\/.*$/, '');
+  if (!chan) return false;
+  if (!/^\w{3,25}$/.test(chan)) { sys('Twitch: that channel name does not look right.'); return false; }
+  const nick = $('twNick').value.trim().toLowerCase(), tok = $('twTok').value.trim().replace(/^oauth:/, '');
+  const authed = Boolean(nick && tok);
+  const s = new WebSocket('wss://irc-ws.chat.twitch.tv:443');
+  const me = tw = { sock: s, chan, canSend: authed, closing: false };
+  s.onopen = () => {
+    s.send('CAP REQ :twitch.tv/tags');
+    s.send('PASS ' + (authed ? 'oauth:' + tok : 'SCHMOOPIIE'));
+    s.send('NICK ' + (authed ? nick : 'justinfan' + (1000 + Math.floor(Math.random() * 80000))));
+    s.send('JOIN #' + chan);
+  };
+  s.onmessage = (ev) => String(ev.data).split('\r\n').forEach((line) => {
+    if (line.startsWith('PING')) return s.send('PONG :tmi.twitch.tv');
+    if (line.includes('Login authentication failed')) { me.canSend = false; return sys('Twitch: login failed. Reading chat only. Check your username and token.'); }
+    if (/ 366 /.test(line)) return sys(`Twitch: connected to #${chan}${me.canSend ? '' : ' (read-only)'}.`);
+    const m = line.match(/^(?:@(\S+) )?:([^!\s]+)!\S+ PRIVMSG #\S+ :(.*)$/);
+    if (!m) return;
+    const tags = Object.fromEntries((m[1] || '').split(';').map((t) => { const i = t.indexOf('='); return [t.slice(0, i), t.slice(i + 1)]; }));
+    const text = m[3].replace(/^\u0001ACTION (.*)\u0001$/, '$1');
+    addChat({ platform: 'twitch', user: (tags['display-name'] || m[2]).replace(/\\s/g, ' '), text });
+  });
+  s.onerror = () => sys('Twitch: connection failed.');
+  s.onclose = () => { if (!me.closing) sys('Twitch: disconnected.'); if (tw === me) tw = null; refreshChatState(); };
+  return true;
+}
+
+/* ---- YouTube (Data API v3, polled) ---- */
+function parseVideoId(v) {
+  v = v.trim();
+  const m = v.match(/(?:v=|youtu\.be\/|\/live\/)([\w-]{11})/);
+  return m ? m[1] : /^[\w-]{11}$/.test(v) ? v : '';
+}
+async function ytConnect() {
+  const raw = $('ytId').value.trim(), key = $('ytKey').value.trim();
+  if (!raw) return false;
+  const vid = parseVideoId(raw);
+  if (!vid) { sys('YouTube: could not find a video ID in that link.'); return false; }
+  if (!key) { sys('YouTube: enter your API key to read chat.'); return false; }
+  const me = yt = { stop: false, chatId: '', sent: new Set(), seen: new Set(), ctl: new AbortController() };
+  const api = async (path, q) => (await fetch(`https://www.googleapis.com/youtube/v3/${path}?${new URLSearchParams({ ...q, key })}`, { signal: me.ctl.signal })).json();
+  (async () => {
+    try {
+      const v = await api('videos', { part: 'liveStreamingDetails', id: vid });
+      if (v.error) return sys('YouTube: ' + (v.error.message || 'API error'));
+      if (!v.items?.length) return sys('YouTube: video not found.');
+      me.chatId = v.items[0].liveStreamingDetails?.activeLiveChatId || '';
+      if (!me.chatId) return sys('YouTube: that video has no active live chat.');
+      sys('YouTube: connected' + ($('ytTok').value.trim() ? '.' : ' (read-only).')); refreshChatState();
+      let token = '', first = true;
+      while (!me.stop) {
+        const q = { liveChatId: me.chatId, part: 'snippet,authorDetails' };
+        if (token) q.pageToken = token;
+        const r = await api('liveChat/messages', q);
+        if (r.error) { sys('YouTube: ' + (r.error.message || 'API error')); break; }
+        token = r.nextPageToken || token;
+        if (!first) for (const it of r.items || []) {
+          if (it.snippet?.type === 'textMessageEvent' && !me.sent.has(it.id) && !me.seen.has(it.id)) {
+            me.seen.add(it.id);
+            addChat({ platform: 'youtube', user: it.authorDetails?.displayName || 'Viewer', text: it.snippet.displayMessage || '' });
+          }
+        }
+        first = false;
+        await new Promise((ok) => setTimeout(ok, Math.max(r.pollingIntervalMillis || 6000, 5000)));
+      }
+    } catch (e) { if (!me.stop) sys('YouTube: could not reach the API.'); }
+    if (yt === me) yt = null; refreshChatState();
+  })();
+  return true;
+}
+async function ytSend(text) {
+  const r = await fetch('https://www.googleapis.com/youtube/v3/liveChat/messages?part=snippet', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + $('ytTok').value.trim(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ snippet: { liveChatId: yt.chatId, type: 'textMessageEvent', textMessageDetails: { messageText: text } } }),
+  });
+  const j = await r.json();
+  if (j.error) throw new Error(j.error.message || 'could not send');
+  if (j.id) yt.sent.add(j.id);
+}
+
+/* ---- connect / disconnect / reply ---- */
+function chatOn() { return Boolean(tw || yt); }
+function refreshChatState() {
+  $('chatConnect').textContent = chatOn() ? 'Disconnect chat' : 'Connect chat';
+  const on = [tw && 'Twitch', yt && 'YouTube'].filter(Boolean);
+  $('chatState').textContent = on.length ? 'Listening to ' + on.join(' and ') + '.' : '';
+}
+function chatOff() {
+  if (tw) { tw.closing = true; tw.sock.close(); tw = null; }
+  if (yt) { yt.stop = true; yt.ctl.abort(); yt = null; }
+  refreshChatState();
+}
+$('chatConnect').onclick = async () => {
+  if (chatOn()) { chatOff(); return sys('Chat disconnected.'); }
+  ['twCh', 'ytId'].forEach((k) => store.set(k, $(k).value.trim()));
+  await wake().catch(() => {});
+  const a = twConnect(), b = await ytConnect();
+  if (!a && !b) sys('Enter a Twitch channel or a YouTube live link first.');
+  refreshChatState();
+};
+$('chatForm').onsubmit = async (e) => {
+  e.preventDefault();
+  const text = $('chatIn').value.trim(); if (!text) return;
+  $('chatIn').value = '';
+  addChat({ platform: 'you', user: 'You', text });
+  if (demoTimer) return setTimeout(() => demoMsg(true), 1400);
+  if (!tw && !yt) return sys('Connect chat first.');
+  if (tw) { if (tw.canSend && tw.sock.readyState === 1) tw.sock.send(`PRIVMSG #${tw.chan} :${text}`); else sys('Twitch: add a username and OAuth token to reply.'); }
+  if (yt?.chatId) {
+    if (!$('ytTok').value.trim()) sys('YouTube: add an OAuth token to reply.');
+    else try { await ytSend(text); } catch (err) { sys('YouTube: ' + err.message); }
+  }
+};
+
+/* ---- demo chat ---- */
+const FAKE = [['twitch', 'pixelfox'], ['youtube', 'Marta R'], ['twitch', 'nightowl88'], ['youtube', 'Devon K'], ['twitch', 'quietstorm'], ['youtube', 'Priya S']];
+const SAY = ['Hello from the chat!', 'Audio sounds great', 'Can you zoom in on that?', 'First time here, love it', 'What mic are you using?', 'Play the last one again', 'Hi from Portland', 'This is so smooth'];
+const REPLIES = ['Thanks for answering!', 'Haha yes, that works', 'Appreciate you reading chat'];
+function demoMsg(reply) {
+  const [platform, user] = FAKE[Math.floor(Math.random() * FAKE.length)];
+  const pool = reply ? REPLIES : SAY;
+  addChat({ platform, user, text: pool[Math.floor(Math.random() * pool.length)] });
+}
+$('demoChat').onclick = async () => {
+  if (demoTimer) { clearTimeout(demoTimer); demoTimer = null; $('demoChat').textContent = 'Try demo chat'; return sys('Demo chat stopped.'); }
+  await wake().catch(() => {});
+  $('demoChat').textContent = 'Stop demo chat'; sys('Demo chat: these messages are simulated.');
+  (function loop() { demoMsg(false); demoTimer = setTimeout(loop, 1500 + Math.random() * 2500); })();
+};
+
+/* ================= going live ================= */
 function setLive(on) {
   live = on;
   $('stage').classList.toggle('live', on);
   $('go').textContent = on ? 'End stream' : 'Go live';
-  $('side').classList.toggle('locked', on);
+  $('outBox').classList.toggle('locked', on);
   $('cam').disabled = $('scr').disabled = on;
+  clearInterval(timer);
+  if (on) {
+    liveSince = Date.now();
+    const tick = () => { const s = Math.floor((Date.now() - liveSince) / 1000); $('badge').textContent = `LIVE ${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; };
+    tick(); timer = setInterval(tick, 1000);
+  }
 }
+function teardown() {
+  if (rec && rec.state !== 'inactive') rec.stop();
+  rec = null;
+  if (relay) { const r = relay; relay = null; r.onclose = null; if (r.readyState <= 1) r.close(); }
+  if (pc) { const p = pc; pc = null; p.onconnectionstatechange = null; p.close(); }
+  if (whipLoc) { fetch(whipLoc, { method: 'DELETE', headers: whipAuth() }).catch(() => {}); whipLoc = null; }
+  setLive(false);
+}
+const whipAuth = () => ($('whipTok').value.trim() ? { Authorization: 'Bearer ' + $('whipTok').value.trim() } : {});
 
-function startStream() {
-  const destinations = PRESETS.map((p, i) => ({
-    name: p.name, url: $('url' + i).value.trim(), key: $('key' + i).value.trim(), on: $('on' + i).checked,
-  })).filter((d) => d.on);
-  if (!destinations.length) return setStatus('Select at least one destination.', true);
-  if (destinations.some((d) => !d.key)) return setStatus('Enter a stream key for each selected destination.', true);
-
+/* ---- relay mode: browser -> WebSocket -> FFmpeg -> RTMP ---- */
+async function startRelay() {
+  const dests = PRESETS.map((p, i) => ({ name: p.name, url: $('url' + i).value.trim(), key: $('key' + i).value.trim(), on: $('on' + i).checked })).filter((d) => d.on);
+  if (!dests.length) return setStatus('Select at least one destination.', true);
+  const bad = dests.find((d) => !d.key || !d.url);
+  if (bad) return setStatus(`Enter a server address and stream key for ${bad.name}.`, true);
+  if (!window.MediaRecorder) return setStatus('This browser cannot record video. Use Chrome, Edge, or Firefox.', true);
   const mime = ['video/webm;codecs=vp8,opus', 'video/webm'].find((m) => MediaRecorder.isTypeSupported(m));
   if (!mime) return setStatus('This browser cannot record WebM. Use Chrome, Edge, or Firefox.', true);
-
-  setStatus('Connecting…');
-  ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ingest`);
-  ws.onopen = () => ws.send(JSON.stringify({ type: 'start', code: $('code').value, destinations: destinations.map(({ name, url, key }) => ({ name, url, key })) }));
-  ws.onmessage = (ev) => {
+  const url = $('relayUrl').value.trim(); store.set('relayUrl', url);
+  setStatus('Connecting to your relay…');
+  let s;
+  try {
+    s = await new Promise((ok, fail) => { const w = new WebSocket(url); w.onopen = () => ok(w); w.onerror = () => fail(); });
+  } catch { return setStatus('Could not reach the relay. Check the address (use wss:// if this page is on https) and that the server is running.', true); }
+  relay = s;
+  s.onmessage = (ev) => {
     const m = JSON.parse(ev.data);
     if (m.type === 'ready') {
-      rec = new MediaRecorder(media, { mimeType: mime, videoBitsPerSecond: 4_000_000, audioBitsPerSecond: 128_000 });
-      rec.ondataavailable = (e) => { if (e.data.size && ws.readyState === 1) e.data.arrayBuffer().then((b) => ws.readyState === 1 && ws.send(b)); };
-      rec.start(500);
-      setLive(true);
-      setStatus(`Live on ${destinations.map((d) => d.name).join(', ')}.`);
-    } else if (m.type === 'stats') {
-      setStatus(`Live on ${destinations.map((d) => d.name).join(', ')} · ${m.kbps} kbps`);
-    } else if (m.type === 'error') {
-      setStatus(m.msg, true); cleanup();
-    } else if (m.type === 'ended') {
-      if (live) setStatus('Stream ended.'); cleanup();
-    }
+      rec = new MediaRecorder(broadcast, { mimeType: mime, videoBitsPerSecond: 4_000_000, audioBitsPerSecond: 128_000 });
+      rec.ondataavailable = (e) => { if (e.data.size) e.data.arrayBuffer().then((b) => relay && relay.readyState === 1 && relay.send(b)); };
+      rec.start(500); setLive(true); setStatus('Live on ' + dests.map((d) => d.name).join(', ') + '.');
+    } else if (m.type === 'stats') setStatus(`Live on ${dests.map((d) => d.name).join(', ')} · ${m.kbps} kbps`);
+    else if (m.type === 'error') { teardown(); setStatus(m.msg, true); }
+    else if (m.type === 'ended') { const bad = m.code; teardown(); setStatus(bad ? 'The relay stopped. Check your stream keys and server addresses.' : 'Stream ended.', Boolean(bad)); }
   };
-  ws.onerror = () => { setStatus('Could not reach the server.', true); cleanup(); };
-  ws.onclose = () => { if (live) { setStatus('Connection lost. The stream has stopped.', true); cleanup(); } };
+  s.onclose = () => { if (live) { teardown(); setStatus('Connection to the relay was lost. The stream has stopped.', true); } };
+  s.send(JSON.stringify({ type: 'start', code: $('code').value, destinations: dests.map(({ name, url, key }) => ({ name, url, key })) }));
 }
 
-function cleanup() {
-  if (rec && rec.state !== 'inactive') rec.stop();
-  rec = null; setLive(false);
-  if (ws && ws.readyState <= 1) ws.close();
-  ws = null;
+/* ---- WHIP mode: browser -> WebRTC -> a service that forwards to your platforms ---- */
+function iceDone(p) {
+  return new Promise((ok) => {
+    if (p.iceGatheringState === 'complete') return ok();
+    const t = setTimeout(ok, 3000);
+    p.addEventListener('icegatheringstatechange', () => { if (p.iceGatheringState === 'complete') { clearTimeout(t); ok(); } });
+  });
+}
+async function startWhip() {
+  const url = $('whipUrl').value.trim();
+  if (!/^https?:\/\//.test(url)) return setStatus('Enter the WHIP endpoint URL from your streaming service.', true);
+  store.set('whipUrl', url);
+  setStatus('Connecting to your streaming service…');
+  const p = pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+  try {
+    broadcast.getTracks().forEach((t) => p.addTransceiver(t, { direction: 'sendonly', streams: [broadcast] }));
+    for (const snd of p.getSenders()) if (snd.track?.kind === 'video') {
+      try { const prm = snd.getParameters(); prm.encodings = prm.encodings?.length ? prm.encodings : [{}]; prm.encodings[0].maxBitrate = 4_000_000; await snd.setParameters(prm); } catch {}
+    }
+    await p.setLocalDescription(await p.createOffer());
+    await iceDone(p);
+    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/sdp', ...whipAuth() }, body: p.localDescription.sdp });
+    if (!r.ok) throw new Error(r.status === 401 || r.status === 403 ? 'The service rejected your token.' : `The service answered with an error (${r.status}).`);
+    const loc = r.headers.get('Location');
+    if (loc) { try { whipLoc = new URL(loc, url).href; } catch {} }
+    await p.setRemoteDescription({ type: 'answer', sdp: await r.text() });
+    p.onconnectionstatechange = () => {
+      if (pc !== p) return;
+      if (p.connectionState === 'connected') { setLive(true); setStatus('Live through your streaming service.'); }
+      else if (p.connectionState === 'failed' || p.connectionState === 'disconnected' || p.connectionState === 'closed') {
+        const was = live; teardown(); setStatus(was ? 'Connection lost. The stream has stopped.' : 'Could not connect to the streaming service.', true);
+      }
+    };
+    if (p.connectionState === 'connected') p.onconnectionstatechange();
+  } catch (e) {
+    if (pc === p) { teardown(); }
+    setStatus(e.message && !/fetch|network/i.test(e.message) ? e.message : 'Could not reach the streaming service. Check the URL and that it allows requests from this page.', true);
+  }
 }
 
+let starting = false;
+async function startStream() {
+  if (!broadcast) return setStatus('Pick a camera or screen first.', true);
+  if (starting) return;
+  starting = true; $('go').disabled = true;
+  try { await ($('mode').value === 'whip' ? startWhip() : startRelay()); } finally { starting = false; $('go').disabled = false; }
+}
 function stopStream(msg) {
-  if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: 'stop' }));
-  cleanup();
-  setStatus(msg || 'Stream ended.');
+  if (relay && relay.readyState === 1) { try { relay.send(JSON.stringify({ type: 'stop' })); } catch {} }
+  teardown(); setStatus(msg || 'Stream ended.');
 }
-
-$('go').onclick = () => (live ? stopStream() : startStream());
-window.addEventListener('beforeunload', (e) => { if (live) { e.preventDefault(); e.returnValue = ''; } });
-
-// Show the access-code field only if the server asks for one.
-fetch('/config').then((r) => r.json()).then((c) => { $('codeWrap').hidden = !c.needsCode; }).catch(() => {});
+$('go').onclick = () => (live || pc || relay ? stopStream() : startStream());
+addEventListener('beforeunload', (e) => { if (live) { e.preventDefault(); e.returnValue = ''; } });
 </script>
 </body>
 </html>
