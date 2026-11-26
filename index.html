@@ -3,18 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Multistream</title>
+<title>NightLights Inc. Multi Streaming</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap">
 <style>
 :root{--bg:#e8ecef;--panel:#f6f8f9;--ink:#17212b;--mute:#5b6773;--line:#c9d1d8;--live:#e5383b;--ok:#1f8a5b;--accent:#2457d6;
   color-scheme:light dark;font-family:"Bricolage Grotesque",system-ui,sans-serif;box-sizing:border-box}
-@media (prefers-color-scheme:dark){:root{--bg:#10151b;--panel:#1a222b;--ink:#e8edf1;--mute:#93a0ab;--line:#2c3743;--accent:#7ea2ff;--live:#ff5a5d;--ok:#4cc38a}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);min-height:100vh}
 main{max-width:1150px;margin:0 auto;padding:28px 20px 48px;display:grid;gap:24px;grid-template-columns:minmax(0,1.5fr) minmax(300px,1fr)}
 @media (max-width:860px){main{grid-template-columns:1fr}}
-h1{font-size:2rem;font-weight:800;margin:0;letter-spacing:-.02em;grid-column:1/-1}
-.sub{color:var(--mute);margin:-18px 0 0;grid-column:1/-1}
 h2{margin:0 0 12px;font-size:1.05rem}
 .stage{background:#000;border-radius:14px;aspect-ratio:16/9;position:relative;overflow:hidden;outline:4px solid var(--line);transition:outline-color .2s}
 .stage.live{outline-color:var(--live)}
@@ -54,10 +51,27 @@ select,input[type=text],input[type=password],input[type=url]{width:100%;margin-t
 .msg.sys{color:var(--mute);font-style:italic}
 .chatform{display:flex;gap:8px;margin-top:10px}
 .chatform input{margin:0}
-details{border-top:1px solid var(--line);padding:12px 0}
-details:first-of-type{border-top:0;padding-top:0}
-summary{font-weight:700;cursor:pointer}
-details>div{margin-top:12px}
+.topbar{max-width:1150px;margin:0 auto;padding:14px 20px 0}
+header.top{max-width:1150px;margin:0 auto;padding:18px 20px 0;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+header.top h1{font-size:1.7rem;font-weight:800;margin:0;letter-spacing:-.02em}
+.themebar{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.themebar label{display:flex;align-items:center;gap:6px;margin:0}
+.themebar select{width:auto;margin:0}
+main{padding-top:16px}
+.folders{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+@media (max-width:860px){.folders{grid-template-columns:1fr}}
+.folder>summary{list-style:none;display:inline-block;cursor:pointer;font-weight:700;background:var(--panel);border:1px solid var(--line);
+  border-radius:10px;padding:9px 18px;user-select:none}
+.folder>summary::-webkit-details-marker{display:none}
+.folder>summary::before{content:"";display:inline-block;width:0;height:0;border-left:6px solid var(--mute);border-top:5px solid transparent;border-bottom:5px solid transparent;margin-right:10px;transition:transform .15s}
+.folder[open]>summary::before{transform:rotate(90deg)}
+.folder[open]>summary{border-bottom-color:var(--panel);border-radius:10px 10px 0 0;position:relative;z-index:1;margin-bottom:-1px}
+.fbody{background:var(--panel);border:1px solid var(--line);border-radius:0 12px 12px 12px;padding:16px}
+.grid2 label+label{margin-top:0}
+.mini{display:inline-block;width:64px;height:7px;background:var(--line);border-radius:6px;overflow:hidden;margin-left:12px;vertical-align:middle}
+.mini i,.meter i{display:block;height:100%;width:0;background:var(--ok);transition:width .06s}
+.mbar.hot{background:var(--live)}
+#starfield{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:100}
 .dest{padding:8px 0}
 .dest .head{display:flex;gap:10px;align-items:center;font-weight:600;color:var(--ink)}
 .dest .fields{display:none}.dest.on .fields{display:block}
@@ -66,58 +80,34 @@ details>div{margin-top:12px}
 </style>
 </head>
 <body>
-<main>
-  <h1>Multistream</h1>
-  <p class="sub">Go live on several platforms and talk to all your chats in one place.</p>
-
-  <section>
-    <div class="stage" id="stage">
-      <video id="preview" autoplay muted playsinline></video>
-      <div class="empty" id="empty">Choose a camera or share your screen to see a preview.</div>
-      <div class="badge" id="badge">LIVE</div>
-    </div>
-    <div class="row">
-      <button id="cam">Use camera</button>
-      <button id="scr">Share screen</button>
-      <button class="go" id="go" disabled>Go live</button>
-    </div>
-    <div class="status" id="status" role="status"></div>
-
-    <div class="card">
-      <h2>Audio</h2>
-      <div class="grid2">
-        <label>Microphone<select id="micSel"><option value="">Default microphone</option></select></label>
-        <label>Speaker<select id="outSel"><option value="">Default speaker</option></select></label>
+<div class="topbar">
+  <div class="folders">
+    <details class="folder" id="audioFolder">
+      <summary>Microphone &amp; audio <span class="mini" aria-hidden="true"><i class="mbar"></i></span></summary>
+      <div class="fbody">
+        <div class="grid2">
+          <label>Microphone<select id="micSel"><option value="">Default microphone</option></select></label>
+          <label>Speaker<select id="outSel"><option value="">Default speaker</option></select></label>
+        </div>
+        <div class="level">
+          <button id="mute">Mute</button>
+          <input type="range" id="vol" min="0" max="150" value="100" aria-label="Microphone level">
+          <output id="volv">100%</output>
+        </div>
+        <div class="meter" aria-hidden="true"><i id="meterbar" class="mbar"></i></div>
+        <div class="opts">
+          <button id="micOn">Turn on mic</button>
+          <label><input type="checkbox" id="mon"> Hear my mic</label>
+          <label><input type="checkbox" id="pingOn" checked> Chat ping</label>
+          <button id="test">Test sound</button>
+        </div>
+        <p class="hint">Level and mute change what your viewers hear. Use headphones with Hear my mic. Switching speakers works in Chrome and Edge.</p>
       </div>
-      <div class="level">
-        <button id="mute">Mute</button>
-        <input type="range" id="vol" min="0" max="150" value="100" aria-label="Microphone level">
-        <output id="volv">100%</output>
-      </div>
-      <div class="meter" aria-hidden="true"><i id="meterbar"></i></div>
-      <div class="opts">
-        <button id="micOn">Turn on mic</button>
-        <label><input type="checkbox" id="mon"> Hear my mic</label>
-        <label><input type="checkbox" id="pingOn" checked> Chat ping</label>
-        <button id="test">Test sound</button>
-      </div>
-      <p class="hint">Level and mute change what your viewers hear. Use headphones with Hear my mic. Switching speakers works in Chrome and Edge.</p>
-    </div>
-  </section>
+    </details>
 
-  <section class="right">
-    <div class="card">
-      <h2>Chat</h2>
-      <div class="feed" id="feed" role="log" aria-live="polite"></div>
-      <form class="chatform" id="chatForm">
-        <input type="text" id="chatIn" placeholder="Reply to chat" autocomplete="off" aria-label="Reply to chat" maxlength="400">
-        <button type="submit">Send</button>
-      </form>
-    </div>
-
-    <div class="card">
-      <details open id="outDetails">
-        <summary>Stream output</summary>
+    <details class="folder" id="outDetails">
+      <summary>Stream keys &amp; output</summary>
+      <div class="fbody">
         <div id="outBox">
           <label>How should video leave this page?
             <select id="mode">
@@ -137,24 +127,58 @@ details>div{margin-top:12px}
             <p class="hint">Use a service that accepts WHIP and forwards to Twitch and YouTube, such as Cloudflare Stream Live or Livepeer Studio. Add Twitch and YouTube as outputs in that service’s dashboard.</p>
           </div>
         </div>
-      </details>
-      <details open>
-        <summary>Chat sources</summary>
-        <div>
-          <label>Twitch channel<input type="text" id="twCh" placeholder="yourchannel" autocomplete="off"></label>
-          <label>Twitch username to reply as (optional)<input type="text" id="twNick" autocomplete="off"></label>
-          <label>Twitch OAuth token (optional, for replies)<input type="password" id="twTok" autocomplete="off"></label>
-          <label>YouTube live URL or video ID<input type="text" id="ytId" placeholder="https://youtube.com/watch?v=…" autocomplete="off"></label>
-          <label>YouTube API key<input type="password" id="ytKey" autocomplete="off"></label>
-          <label>YouTube OAuth token (optional, for replies)<input type="password" id="ytTok" autocomplete="off"></label>
-          <div class="row">
-            <button id="chatConnect">Connect chat</button>
-            <button id="demoChat">Try demo chat</button>
-          </div>
-          <p class="chatstate" id="chatState"></p>
-          <p class="hint">Twitch chat can be read with just the channel name. YouTube needs an API key and uses a little quota per refresh. Tokens are kept in this tab only.</p>
-        </div>
-      </details>
+      </div>
+    </details>
+  </div>
+</div>
+<header class="top">
+  <h1>NightLights Inc. Multi Streaming</h1>
+  <div class="themebar">
+    <label>Theme <select id="theme" aria-label="Theme"></select></label>
+    <label><input type="checkbox" id="stars"> Stars</label>
+  </div>
+</header>
+<canvas id="starfield" aria-hidden="true"></canvas>
+<main>
+
+  <section>
+    <div class="stage" id="stage">
+      <video id="preview" autoplay muted playsinline></video>
+      <div class="empty" id="empty">Choose a camera or share your screen to see a preview.</div>
+      <div class="badge" id="badge">LIVE</div>
+    </div>
+    <div class="row">
+      <button id="cam">Use camera</button>
+      <button id="scr">Share screen</button>
+      <button class="go" id="go" disabled>Go live</button>
+    </div>
+    <div class="status" id="status" role="status"></div>
+  </section>
+
+  <section class="right">
+    <div class="card">
+      <h2>Chat</h2>
+      <div class="feed" id="feed" role="log" aria-live="polite"></div>
+      <form class="chatform" id="chatForm">
+        <input type="text" id="chatIn" placeholder="Reply to chat" autocomplete="off" aria-label="Reply to chat" maxlength="400">
+        <button type="submit">Send</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Chat sources</h2>
+      <label>Twitch channel<input type="text" id="twCh" placeholder="yourchannel" autocomplete="off"></label>
+      <label>Twitch username to reply as (optional)<input type="text" id="twNick" autocomplete="off"></label>
+      <label>Twitch OAuth token (optional, for replies)<input type="password" id="twTok" autocomplete="off"></label>
+      <label>YouTube live URL or video ID<input type="text" id="ytId" placeholder="https://youtube.com/watch?v=…" autocomplete="off"></label>
+      <label>YouTube API key<input type="password" id="ytKey" autocomplete="off"></label>
+      <label>YouTube OAuth token (optional, for replies)<input type="password" id="ytTok" autocomplete="off"></label>
+      <div class="row">
+        <button id="chatConnect">Connect chat</button>
+        <button id="demoChat">Try demo chat</button>
+      </div>
+      <p class="chatstate" id="chatState"></p>
+      <p class="hint">Twitch chat can be read with just the channel name. YouTube needs an API key and uses a little quota per refresh. Tokens are kept in this tab only.</p>
     </div>
   </section>
 </main>
@@ -271,8 +295,7 @@ const tbuf = new Uint8Array(512);
 (function meter() {
   let lvl = 0;
   if (analyser && micSrc) { analyser.getByteTimeDomainData(tbuf); let s = 0; for (const v of tbuf) s += ((v - 128) / 128) ** 2; lvl = Math.min(1, Math.sqrt(s / tbuf.length) * 3); }
-  $('meterbar').style.width = Math.round(lvl * 100) + '%';
-  $('meterbar').classList.toggle('hot', lvl > 0.85);
+  document.querySelectorAll('.mbar').forEach((b) => { b.style.width = Math.round(lvl * 100) + '%'; b.classList.toggle('hot', lvl > 0.85); });
   requestAnimationFrame(meter);
 })();
 
@@ -562,6 +585,86 @@ function stopStream(msg) {
 }
 $('go').onclick = () => (live || pc || relay ? stopStream() : startStream());
 addEventListener('beforeunload', (e) => { if (live) { e.preventDefault(); e.returnValue = ''; } });
+
+/* ================= themes + stars ================= */
+// [background, panel, text, muted text, lines, accent, live, ok, star]
+const THEMES = {
+  'Daylight':      ['#e8ecef','#f6f8f9','#17212b','#5b6773','#c9d1d8','#2457d6','#e5383b','#1f8a5b','#4a5d85'],
+  'Midnight':      ['#10151b','#1a222b','#e8edf1','#93a0ab','#2c3743','#7ea2ff','#ff5a5d','#4cc38a','#ffffff'],
+  'Deep Space':    ['#05060f','#0d1024','#e9ecff','#8d95c4','#232a55','#8c7bff','#ff5c7a','#4be0b0','#ffffff'],
+  'Aurora':        ['#07161a','#0d2a2e','#e6fff8','#8cc4b8','#1d4a4a','#3ef0c0','#ff6b8a','#7dffb0','#b8fff0'],
+  'Sunset':        ['#2a1020','#3b1830','#ffe9de','#d9a79c','#5b2a45','#ff8a4c','#ff4d6d','#ffd166','#ffd9b0'],
+  'Ocean':         ['#0a1f33','#10304d','#e6f4ff','#8fb4d1','#1d4a70','#38bdf8','#fb7185','#34d399','#d6efff'],
+  'Forest':        ['#0f1d14','#17291c','#e8f5e9','#97b59b','#2a4630','#6fcf7f','#ff6b6b','#a3e635','#d9ffd9'],
+  'Lavender':      ['#efe9f7','#faf6ff','#2b1f3d','#6f5f8a','#d5c8ea','#7c3aed','#e11d48','#059669','#8b5cf6'],
+  'Rose':          ['#fbe9ee','#fff5f7','#3a1520','#8a5a68','#f0c6d2','#e11d6a','#dc2626','#16a34a','#e11d6a'],
+  'Mint':          ['#e3f5ee','#f2fbf7','#10302a','#4f7a6e','#bfe3d4','#0f9d78','#e5484d','#0f9d78','#0f9d78'],
+  'Sand':          ['#f1e8d8','#faf4e6','#33291a','#7d6c50','#dccfb4','#b45309','#c2410c','#4d7c0f','#b45309'],
+  'Slate':         ['#1b1f27','#252b36','#e5e9f0','#9aa4b5','#3a4252','#88c0d0','#ff7b7b','#a3be8c','#ffffff'],
+  'Neon':          ['#0a0a14','#14142a','#f5f5ff','#9a9ad0','#2d2d5e','#00f0ff','#ff2bd6','#39ff88','#ffffff'],
+  'Candy':         ['#ffe6f3','#fff4fa','#3b1a35','#8f5b86','#f7c2e0','#ff4fa3','#ff3b3b','#2ec27e','#ff4fa3'],
+  'Volcano':       ['#1c0b0b','#2b1212','#ffeae0','#d19a8a','#4d2020','#ff6a3d','#ff2d2d','#ffc857','#ffb199'],
+  'Arctic':        ['#e6f1f8','#f5fafd','#0f2a3d','#56788f','#c3dcec','#0284c7','#e11d48','#0d9488','#0284c7'],
+  'Terminal':      ['#050805','#0b130b','#c8ffc8','#6fb26f','#1c3a1c','#39ff14','#ff4040','#39ff14','#7dff7d'],
+  'Dracula':       ['#1e1f29','#282a36','#f8f8f2','#9aa0c0','#44475a','#bd93f9','#ff5555','#50fa7b','#f8f8f2'],
+  'Coffee':        ['#20150f','#2e2018','#f3e6da','#bfa592','#4a3427','#d4a373','#e5533d','#9ccc65','#f3d9b8'],
+  'Galaxy Purple': ['#140a26','#1f1238','#f1e8ff','#aa98d0','#3d2a66','#c084fc','#ff5d8f','#5eead4','#ffffff'],
+};
+const hexRgb = (x) => [1, 3, 5].map((i) => parseInt(x.slice(i, i + 2), 16));
+let starRGB = '255,255,255';
+function applyTheme(name) {
+  if (!THEMES[name]) name = 'Daylight';
+  const t = THEMES[name], root = document.documentElement;
+  ['--bg', '--panel', '--ink', '--mute', '--line', '--accent', '--live', '--ok'].forEach((k, i) => root.style.setProperty(k, t[i]));
+  const [r, g, b] = hexRgb(t[0]);
+  root.style.colorScheme = (r * 299 + g * 587 + b * 114) / 1000 < 128 ? 'dark' : 'light';
+  starRGB = hexRgb(t[8]).join(',');
+  $('theme').value = name; store.set('theme', name);
+}
+$('theme').innerHTML = Object.keys(THEMES).map((n) => `<option>${n}</option>`).join('');
+$('theme').onchange = (e) => applyTheme(e.target.value);
+applyTheme(store.get('theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'Midnight' : 'Daylight'));
+
+const cv = $('starfield'), sg = cv.getContext('2d');
+let stars = [], SW = 0, SH = 0, sdpr = 1, starRaf = 0, lastT = 0;
+const newStar = (initial) => {
+  const life = 1500 + Math.random() * 3500;
+  return { x: Math.random() * SW, y: Math.random() * SH, s: 0.5 + Math.random() * 0.5, life, max: 0.35 + Math.random() * 0.6,
+           t: -Math.random() * (initial ? life * 1.5 : 1500) };
+};
+function sizeStars() {
+  sdpr = Math.min(window.devicePixelRatio || 1, 2); SW = innerWidth; SH = innerHeight;
+  cv.width = Math.round(SW * sdpr); cv.height = Math.round(SH * sdpr);
+  const n = Math.max(60, Math.min(220, Math.round(SW * SH / 9000)));
+  while (stars.length < n) stars.push(newStar(true));
+  stars.length = n;
+  stars.forEach((s) => { if (s.x > SW) s.x = Math.random() * SW; if (s.y > SH) s.y = Math.random() * SH; });
+}
+function drawStars(now) {
+  const dt = Math.min(now - lastT, 100); lastT = now;
+  sg.clearRect(0, 0, cv.width, cv.height);
+  sg.fillStyle = `rgb(${starRGB})`;
+  for (let i = 0; i < stars.length; i++) {
+    let s = stars[i];
+    s.t += dt;
+    if (s.t < 0) continue;
+    if (s.t >= s.life) { s = stars[i] = newStar(false); continue; }
+    sg.globalAlpha = Math.sin(Math.PI * s.t / s.life) ** 2 * s.max;
+    sg.fillRect(s.x * sdpr, s.y * sdpr, s.s * sdpr, s.s * sdpr);
+  }
+  sg.globalAlpha = 1;
+  starRaf = requestAnimationFrame(drawStars);
+}
+function setStars(on) {
+  cancelAnimationFrame(starRaf); starRaf = 0;
+  sg.clearRect(0, 0, cv.width, cv.height);
+  $('stars').checked = on; store.set('stars', on ? 'on' : 'off');
+  if (on) { sizeStars(); lastT = performance.now(); starRaf = requestAnimationFrame(drawStars); }
+}
+$('stars').onchange = (e) => setStars(e.target.checked);
+addEventListener('resize', () => { if (starRaf) sizeStars(); });
+const savedStars = store.get('stars');
+setStars(savedStars ? savedStars === 'on' : !matchMedia('(prefers-reduced-motion: reduce)').matches);
 </script>
 </body>
 </html>
